@@ -2,17 +2,15 @@
 // Composition root wiring gateways, use cases, and view models.
 
 import Foundation
+import ChromaDomain
+import ChromaUseCases
 
 struct AppEnvironment {
-    // Shared settings
+    // Shared app-wide settings
     let appSettings: AppSettings
 
-    // Gateways
+    // Concrete camera gateway for UI (ContentView / CameraPreview)
     let cameraGateway: AVFoundationCameraGateway
-    let modelGateway: CoreMLModelGateway
-    let exportGateway: FileExportGatewayImpl
-    let permissionsGateway: SystemPermissionsGateway
-    let historyGateway: HistoryStoreGateway
 
     // Use cases
     let sessionInteractor: SessionInteractor
@@ -24,30 +22,43 @@ struct AppEnvironment {
     let startupViewModel: StartupViewModel
 
     static func bootstrap() -> AppEnvironment {
-        // Shared settings
+        // Settings
         let settings = AppSettings()
 
-        // Infrastructure
+        // Concrete gateways (infrastructure)
         let camera = AVFoundationCameraGateway()
         let model = CoreMLModelGateway()
         let export = FileExportGatewayImpl()
         let permissions = SystemPermissionsGateway()
         let history = HistoryStoreGateway()
 
-        // Use cases
-        let sessionInteractor = SessionInteractor(camera: camera,
-                                                  model: model,
-                                                  export: export,
-                                                  sink: nil)
-        let startupInteractor = StartupInteractor(permissions: permissions)
-        let historyInteractor = HistoryInteractor(history: history)
+        // Use cases (depend on protocols from ChromaDomain)
+        let sessionInteractor = SessionInteractor(
+            camera: camera,     // seen as CameraGateway by the interactor
+            model: model,       // ModelGateway
+            export: export,     // ExportGateway
+            sink: nil
+        )
 
-        // View models
-        let sessionVM = SessionViewModel(sessionUseCase: sessionInteractor,
-                                         settings: settings)
-        let startupVM = StartupViewModel(startupUseCase: startupInteractor)
+        let startupInteractor = StartupInteractor(
+            permissions: permissions  // PermissionsGateway
+        )
 
-        // Wire sink for session events
+        let historyInteractor = HistoryInteractor(
+            history: history           // HistoryGateway
+        )
+
+        // View models (main-actor, SwiftUI-facing)
+        let sessionVM = SessionViewModel(
+            sessionUseCase: sessionInteractor,
+            settings: settings
+        )
+
+        let startupVM = StartupViewModel(
+            startupUseCase: startupInteractor
+        )
+
+        // Wire session events into the VM
         Task {
             await sessionInteractor.setSink(sessionVM)
         }
@@ -55,10 +66,6 @@ struct AppEnvironment {
         return AppEnvironment(
             appSettings: settings,
             cameraGateway: camera,
-            modelGateway: model,
-            exportGateway: export,
-            permissionsGateway: permissions,
-            historyGateway: history,
             sessionInteractor: sessionInteractor,
             startupInteractor: startupInteractor,
             historyInteractor: historyInteractor,

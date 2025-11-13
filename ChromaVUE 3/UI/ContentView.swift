@@ -4,8 +4,10 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var startupViewModel: StartupViewModel
-    @StateObject var sessionViewModel: SessionViewModel
+    @State private var isShowingSettings = false
+
+    @ObservedObject var startupViewModel: StartupViewModel
+    @ObservedObject var sessionViewModel: SessionViewModel
 
     /// Concrete camera gateway used only to feed CameraPreview.
     let cameraGateway: AVFoundationCameraGateway
@@ -15,6 +17,12 @@ struct ContentView: View {
             // Camera preview
             CameraPreview(cameraGateway: cameraGateway)
                 .ignoresSafeArea()
+
+            // Heatmap overlay (GPU or CPU based on settings)
+            HeatmapOverlayView(
+                grid: sessionViewModel.lastScalarGrid,
+                useGPU: sessionViewModel.heatmapBackend == .gpu
+            )
 
             // Simple HUD
             VStack {
@@ -36,7 +44,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                // Bottom controls
+                // Bottom controls (unchanged)
                 HStack(spacing: 16) {
                     Button(action: {
                         if sessionViewModel.isRunning {
@@ -73,6 +81,24 @@ struct ContentView: View {
             .foregroundStyle(.white)
             .shadow(radius: 4)
 
+            // Settings button overlay (top-right)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        isShowingSettings = true
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .padding(10)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .padding(.top, 20)
+                    .padding(.trailing, 16)
+                }
+                Spacer()
+            }
+
             // Startup overlay
             if !startupViewModel.isReady {
                 LaunchOverlay(viewModel: startupViewModel)
@@ -81,6 +107,9 @@ struct ContentView: View {
         }
         .onAppear {
             startupViewModel.onAppear()
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsView(appSettings: sessionViewModel.settings)
         }
     }
 }

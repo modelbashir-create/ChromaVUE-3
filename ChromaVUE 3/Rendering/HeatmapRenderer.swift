@@ -3,7 +3,7 @@
 
 import Foundation
 import CoreGraphics
-import CoreImage
+import ChromaDomain
 
 /// Abstract interface for something that can render a ScalarGrid into a CGImage.
 public protocol HeatmapRenderer {
@@ -70,12 +70,11 @@ public final class CPUHeatmapRenderer: HeatmapRenderer {
 
     // MARK: - Color ramp
 
-    /// Map scalar value to RGBA (0–255). Assumes input in roughly [0, 1].
+    /// Map scalar value [0, 1] to RGBA (0–255).
     private static func colorForValue(_ rawValue: Float) -> (r: UInt8, g: UInt8, b: UInt8, a: UInt8) {
         // Clamp to [0, 1]
         let v = max(0, min(1, rawValue))
 
-        // Simple segmented ramp:
         // 0.0 -> blue, 0.25 -> cyan, 0.5 -> green, 0.75 -> yellow, 1.0 -> red
         let r: Float
         let g: Float

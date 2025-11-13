@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FFCA5B092EC576960038C09A /* ChromaDomain in Frameworks */ = {isa = PBXBuildFile; productRef = FFCA5B082EC576960038C09A /* ChromaDomain */; };
+		FFCA5B0E2EC578EB0038C09A /* ChromaDomain in Frameworks */ = {isa = PBXBuildFile; productRef = FFCA5B0D2EC578EB0038C09A /* ChromaDomain */; };
+		FFCA5B112EC57D150038C09A /* ChromaUseCases in Frameworks */ = {isa = PBXBuildFile; productRef = FFCA5B102EC57D150038C09A /* ChromaUseCases */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		FFCFAC5C2EBAE64200EAF538 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +35,33 @@
 		FFCFAC652EBAE64200EAF538 /* ChromaVUE 3UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ChromaVUE 3UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FFCFAC862EBAE89F00EAF538 /* Exceptions for "ChromaVUE 3" folder in "ChromaVUE 3" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Rendering/ HeatMapShaders.metal",
+			);
+			target = FFCFAC4D2EBAE64000EAF538 /* ChromaVUE 3 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		FFCFACF42EBAF7BC00EAF538 /* Exceptions for "ChromaVUE 3" folder in "Copy Bundle Resources" phase from "ChromaVUE 3" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = FFCFAC4C2EBAE64000EAF538 /* Resources */;
+			membershipExceptions = (
+				"Rendering/ HeatMapShaders.metal",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FFCFAC502EBAE64000EAF538 /* ChromaVUE 3 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FFCFAC862EBAE89F00EAF538 /* Exceptions for "ChromaVUE 3" folder in "ChromaVUE 3" target */,
+				FFCFACF42EBAF7BC00EAF538 /* Exceptions for "ChromaVUE 3" folder in "Copy Bundle Resources" phase from "ChromaVUE 3" target */,
+			);
 			path = "ChromaVUE 3";
 			sourceTree = "<group>";
 		};
@@ -52,6 +82,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FFCA5B0E2EC578EB0038C09A /* ChromaDomain in Frameworks */,
+				FFCA5B112EC57D150038C09A /* ChromaUseCases in Frameworks */,
+				FFCA5B092EC576960038C09A /* ChromaDomain in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +105,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FFCA5B062EC575010038C09A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		FFCFAC452EBAE64000EAF538 = {
 			isa = PBXGroup;
 			children = (
 				FFCFAC502EBAE64000EAF538 /* ChromaVUE 3 */,
 				FFCFAC5E2EBAE64200EAF538 /* ChromaVUE 3Tests */,
 				FFCFAC682EBAE64200EAF538 /* ChromaVUE 3UITests */,
+				FFCA5B062EC575010038C09A /* Frameworks */,
 				FFCFAC4F2EBAE64000EAF538 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +153,9 @@
 			);
 			name = "ChromaVUE 3";
 			packageProductDependencies = (
+				FFCA5B082EC576960038C09A /* ChromaDomain */,
+				FFCA5B0D2EC578EB0038C09A /* ChromaDomain */,
+				FFCA5B102EC57D150038C09A /* ChromaUseCases */,
 			);
 			productName = "ChromaVUE 3";
 			productReference = FFCFAC4E2EBAE64000EAF538 /* ChromaVUE 3.app */;
@@ -195,6 +239,10 @@
 			);
 			mainGroup = FFCFAC452EBAE64000EAF538;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FFCA5B0C2EC578EB0038C09A /* XCLocalSwiftPackageReference "ChromaDomain" */,
+				FFCA5B0F2EC57D150038C09A /* XCLocalSwiftPackageReference "ChromaUseCases" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FFCFAC4F2EBAE64000EAF538 /* Products */;
 			projectDirPath = "";
@@ -578,6 +626,32 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		FFCA5B0C2EC578EB0038C09A /* XCLocalSwiftPackageReference "ChromaDomain" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ChromaDomain;
+		};
+		FFCA5B0F2EC57D150038C09A /* XCLocalSwiftPackageReference "ChromaUseCases" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ChromaUseCases;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FFCA5B082EC576960038C09A /* ChromaDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ChromaDomain;
+		};
+		FFCA5B0D2EC578EB0038C09A /* ChromaDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ChromaDomain;
+		};
+		FFCA5B102EC57D150038C09A /* ChromaUseCases */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ChromaUseCases;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FFCFAC462EBAE64000EAF538 /* Project object */;
 }

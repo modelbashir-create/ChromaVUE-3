@@ -9,9 +9,16 @@ import SwiftUI
 
 @main
 struct ChromaVUE_3App: App {
+    /// Composition root for gateways, use cases, and view models.
+    private let env = AppEnvironment.bootstrap()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(
+                startupViewModel: env.startupViewModel,
+                sessionViewModel: env.sessionViewModel,
+                cameraGateway: env.cameraGateway
+            )
         }
     }
 }

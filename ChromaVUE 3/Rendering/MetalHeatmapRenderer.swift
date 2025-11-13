@@ -4,6 +4,7 @@
 import Foundation
 import Metal
 import CoreGraphics
+import ChromaDomain
 
 /// Metal-backed heatmap renderer.
 /// Converts a ScalarGrid into a colored CGImage using a compute kernel.
@@ -19,9 +20,8 @@ public final class MetalHeatmapRenderer: HeatmapRenderer {
         self.device = dev
         self.commandQueue = dev?.makeCommandQueue()
 
-        // Try to load the default Metal library and the "heatmapKernel" function.
         if let dev,
-           let library = try? dev.makeDefaultLibrary(),
+           let library = dev.makeDefaultLibrary(),
            let function = library.makeFunction(name: "heatmapKernel") {
             self.pipelineState = try? dev.makeComputePipelineState(function: function)
         } else {
@@ -48,13 +48,13 @@ public final class MetalHeatmapRenderer: HeatmapRenderer {
             height: height,
             mipmapped: false
         )
-        scalarDesc.usage = [.shaderRead]
+        scalarDesc.usage = MTLTextureUsage.shaderRead
         guard let scalarTex = device.makeTexture(descriptor: scalarDesc) else {
             return CPUHeatmapRenderer.shared.makeImage(from: grid)
         }
 
         // Upload scalar values to the texture
-        var scalars = grid.values  // make mutable copy
+        var scalars = grid.values
         let bytesPerRowScalar = width * MemoryLayout<Float>.stride
         scalarTex.replace(
             region: MTLRegion(origin: MTLOrigin(x: 0, y: 0, z: 0),
@@ -64,19 +64,18 @@ public final class MetalHeatmapRenderer: HeatmapRenderer {
             bytesPerRow: bytesPerRowScalar
         )
 
-        // Create output color texture (.rgba8Unorm)
+        // Output color texture (.rgba8Unorm)
         let colorDesc = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .rgba8Unorm,
             width: width,
             height: height,
             mipmapped: false
         )
-        colorDesc.usage = [.shaderWrite, .shaderRead]
+        colorDesc.usage = [MTLTextureUsage.shaderWrite, MTLTextureUsage.shaderRead]
         guard let colorTex = device.makeTexture(descriptor: colorDesc) else {
             return CPUHeatmapRenderer.shared.makeImage(from: grid)
         }
 
-        // Encode compute pass
         guard let commandBuffer = queue.makeCommandBuffer(),
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return CPUHeatmapRenderer.shared.makeImage(from: grid)
@@ -85,10 +84,6 @@ public final class MetalHeatmapRenderer: HeatmapRenderer {
         encoder.setComputePipelineState(pipeline)
         encoder.setTexture(scalarTex, index: 0)
         encoder.setTexture(colorTex, index: 1)
-
-        // Optional min/max uniforms – for now we just normalize by [0, 1] in shader.
-        // If you want dynamic normalization, you can compute min/max here and pass
-        // via a small uniform buffer.
 
         let w = pipeline.threadExecutionWidth
         let h = pipeline.maxTotalThreadsPerThreadgroup / w

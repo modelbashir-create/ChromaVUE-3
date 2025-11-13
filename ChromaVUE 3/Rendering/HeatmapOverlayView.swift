@@ -1,11 +1,14 @@
 // Rendering/HeatmapOverlayView.swift
 // SwiftUI overlay that renders a ScalarGrid as a heatmap image.
 
+
 import SwiftUI
+import ChromaDomain
 
 struct HeatmapOverlayView: View {
     let grid: ScalarGrid?
-    var renderer: HeatmapRenderer = CPUHeatmapRenderer.shared
+    /// If true, try GPU (Metal) first; otherwise use CPU renderer.
+    var useGPU: Bool
 
     @State private var cgImage: CGImage?
 
@@ -13,7 +16,6 @@ struct HeatmapOverlayView: View {
         GeometryReader { geo in
             Group {
                 if let cgImage {
-                    // Stretch to fill, preserving aspect ratio.
                     Image(decorative: cgImage,
                           scale: 1,
                           orientation: .up)
@@ -27,16 +29,17 @@ struct HeatmapOverlayView: View {
                     Color.clear
                 }
             }
-            .onAppear {
+            .onAppear { updateImage() }
+            .onChange(of: grid?.width) {
                 updateImage()
             }
-            .onChange(of: grid?.width) { _ in
+            .onChange(of: grid?.height) {
                 updateImage()
             }
-            .onChange(of: grid?.height) { _ in
+            .onChange(of: grid?.values.count) {
                 updateImage()
             }
-            .onChange(of: grid?.values.count) { _ in
+            .onChange(of: useGPU) {
                 updateImage()
             }
         }
@@ -48,6 +51,11 @@ struct HeatmapOverlayView: View {
             cgImage = nil
             return
         }
+
+        let renderer: HeatmapRenderer = useGPU
+            ? MetalHeatmapRenderer.shared   // GPU (falls back to CPU internally)
+            : CPUHeatmapRenderer.shared     // force CPU
+
         cgImage = renderer.makeImage(from: grid)
     }
 }

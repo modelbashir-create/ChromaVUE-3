@@ -1,7 +1,16 @@
+//
+//  LaunchOverlay.swift
+//  ChromaVUE 3
+//
+//  Created by Mohamed Elbashir on 11/4/25.
+//
+
+
 // UI/LaunchOverlay.swift
 // Lightweight, brandable loading overlay for app startup.
 
 import SwiftUI
+import ChromaUseCases
 
 struct LaunchOverlay: View {
     @ObservedObject var viewModel: StartupViewModel

@@ -1,14 +1,15 @@
-// Infrastructure/FileExportGateway.swift
-// Concrete ExportGateway using the file system (JSONL + .bin in future).
+// Infrastructure/FileExportGatewayImpl.swift
+// Concrete ExportGateway using the file system (JSONL + .bin).
 
 import Foundation
+import ChromaDomain
 
 /// File system–backed implementation of ExportGateway.
 ///
 /// - Creates a folder per session under Documents/ChromaSessions.
-/// - Writes a JSONL file of ProcessedFrame records.
-/// - You can extend this later to write .bin float grids and CSVs.
-public actor FileExportGatewayImpl: ExportGateway {
+/// - Optionally writes a minimal JSONL file of per-frame summary records.
+/// - Optionally writes .bin float grids for scalar/depth/RGB if enabled.
+public actor FileExportGatewayImpl: ChromaDomain.ExportGateway {
     private struct SessionRecord {
         let id: SessionID
         let folder: URL
@@ -16,91 +17,126 @@ public actor FileExportGatewayImpl: ExportGateway {
         var jsonlHandle: FileHandle?
     }
 
-    private var sessions: [SessionID: SessionRecord] = [:]
-    private let fileManager = FileManager.default
-    private let encoder: JSONEncoder
+    private var sessions: [UUID: SessionRecord] = [:]
 
-    public init() {
-        let enc = JSONEncoder()
-        enc.outputFormatting = [.withoutEscapingSlashes]
-        self.encoder = enc
-    }
+    public init() {}
 
-    // MARK: - ExportGateway
+    // MARK: - ExportGateway conformance
 
     public func beginSession(id: SessionID, config: TrainingExportConfig?) async throws {
-        guard sessions[id] == nil else { return }
+        let root = try ensureRootFolder()
+        let folder = root.appendingPathComponent(id.rawValue.uuidString, isDirectory: true)
 
-        let root = try sessionsRoot()
-        let timestamp = ISO8601DateFormatter().string(from: Date())
-            .replacingOccurrences(of: ":", with: "-")
+        let fm = FileManager.default
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true, attributes: nil)
 
-        let folder = root.appendingPathComponent("session_\(timestamp)_\(id.rawValue.uuidString)",
-                                                 isDirectory: true)
-        try fileManager.createDirectory(at: folder,
-                                        withIntermediateDirectories: true)
-
-        // Create/open JSONL file if JSONL is enabled (or config is nil => default true).
-        var handle: FileHandle?
-        let shouldWriteJSONL = config?.enableJSONL ?? true
-        if shouldWriteJSONL {
+        var jsonlHandle: FileHandle? = nil
+        if config?.enableJSONL == true {
             let jsonlURL = folder.appendingPathComponent("frames.jsonl")
-            if !fileManager.fileExists(atPath: jsonlURL.path) {
-                fileManager.createFile(atPath: jsonlURL.path, contents: nil)
-            }
-            handle = try FileHandle(forWritingTo: jsonlURL)
-            try handle?.seekToEnd()
+            fm.createFile(atPath: jsonlURL.path, contents: nil, attributes: nil)
+            jsonlHandle = try FileHandle(forWritingTo: jsonlURL)
         }
 
-        let rec = SessionRecord(id: id, folder: folder, config: config, jsonlHandle: handle)
-        sessions[id] = rec
+        let record = SessionRecord(
+            id: id,
+            folder: folder,
+            config: config,
+            jsonlHandle: jsonlHandle
+        )
+        sessions[id.rawValue] = record
     }
 
     public func endSession(id: SessionID) async {
-        guard var rec = sessions[id] else { return }
+        guard let record = sessions.removeValue(forKey: id.rawValue) else { return }
         do {
-            try rec.jsonlHandle?.close()
+            try record.jsonlHandle?.close()
         } catch {
-            // Swallow errors for now; you can add logging later.
+            // Optional: dev logging
         }
-        sessions.removeValue(forKey: id)
     }
 
     public func exportFrame(id: SessionID, processed: ProcessedFrame) async {
-        guard var rec = sessions[id] else { return }
+        guard let record = sessions[id.rawValue] else { return }
 
-        // JSONL export
-        if let handle = rec.jsonlHandle {
-            do {
-                let data = try encoder.encode(processed)
-                handle.write(data)
-                if let newline = "\n".data(using: .utf8) {
-                    handle.write(newline)
+        // 1) JSONL: write a minimal, hand-crafted JSON line (no Encodable requirement).
+        if record.config?.enableJSONL == true, let handle = record.jsonlHandle {
+            let meta = processed.meta
+            let qcLevel = processed.qcLevel
+            let sto2Mean = processed.sto2Stats?.mean ?? -1
+
+            // Very small, flat JSON item to make training/debugging easier.
+            let jsonLine = """
+            {"timestampMS":\(meta.timestampMS),"index":\(meta.index),"qcLevel":"\(qcLevel.rawValue)","sto2Mean":\(sto2Mean)}
+            """
+
+            if let data = (jsonLine + "\n").data(using: .utf8) {
+                do {
+                    try handle.write(contentsOf: data)
+                } catch {
+                    // Optional: dev logging
                 }
-            } catch {
-                // TODO: optional dev logging
             }
         }
 
-        // TODO: Later:
-        // - If rec.config?.exportRAWStills == true, tie in still capture via another gateway.
-        // - If you want .bin grids, add functions to write ScalarGrid / DepthGrid as binary.
-        sessions[id] = rec
+        // 2) Binary grids: scalar / depth / RGB as float32 .bin files.
+        if record.config?.enableBinGrids == true {
+            let folder = record.folder
+            let index = processed.meta.index
+
+            if let scalar = processed.scalar {
+                let url = folder.appendingPathComponent("scalar_\(index).bin")
+                writeFloatGrid(scalar.values, to: url)
+            }
+
+            if let depth = processed.depth {
+                let url = folder.appendingPathComponent("depth_\(index).bin")
+                writeFloatGrid(depth.values, to: url)
+            }
+
+            if let rgbGrid = processed.rgb {
+                let url = folder.appendingPathComponent("rgb_\(index).bin")
+
+                // Flatten RGBPixel(r,g,b) into an interleaved float array [r,g,b,r,g,b,...].
+                var values: [Float] = []
+                values.reserveCapacity(rgbGrid.width * rgbGrid.height * 3)
+
+                for pixel in rgbGrid.pixels {
+                    values.append(pixel.r)
+                    values.append(pixel.g)
+                    values.append(pixel.b)
+                }
+
+                writeFloatGrid(values, to: url)
+            }
+        }
+
+        // Re-store the record (in case we modify it in the future, e.g. counters).
+        sessions[id.rawValue] = record
     }
 
     // MARK: - Helpers
 
-    private func sessionsRoot() throws -> URL {
-        guard let docs = fileManager.urls(for: .documentDirectory,
-                                          in: .userDomainMask).first else {
-            throw NSError(domain: "FileExportGateway", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "No documents directory"])
-        }
+    private func ensureRootFolder() throws -> URL {
+        let fm = FileManager.default
+        let docs = try fm.url(
+            for: .documentDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
         let root = docs.appendingPathComponent("ChromaSessions", isDirectory: true)
-        if !fileManager.fileExists(atPath: root.path) {
-            try fileManager.createDirectory(at: root,
-                                            withIntermediateDirectories: true)
-        }
+        try fm.createDirectory(at: root, withIntermediateDirectories: true, attributes: nil)
         return root
+    }
+
+    private func writeFloatGrid(_ values: [Float], to url: URL) {
+        let data = values.withUnsafeBufferPointer { ptr in
+            Data(buffer: ptr)
+        }
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            // Optional: dev logging
+        }
     }
 }

@@ -1,3 +1,11 @@
+//
+//  PermissionView.swift
+//  ChromaVUE 3
+//
+//  Created by Mohamed Elbashir on 11/4/25.
+//
+
+
 // UI/PermissionView.swift
 // Simple screen explaining why camera access is needed.
 

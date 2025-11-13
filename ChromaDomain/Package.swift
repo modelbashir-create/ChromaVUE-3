@@ -4,23 +4,23 @@
 import PackageDescription
 
 let package = Package(
-    name: " ChromaUseCases",
+    name: "ChromaDomain",
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: " ChromaUseCases",
-            targets: [" ChromaUseCases"]
+            name: "ChromaDomain",
+            targets: ["ChromaDomain"]
         ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: " ChromaUseCases"
+            name: "ChromaDomain"
         ),
         .testTarget(
-            name: " ChromaUseCasesTests",
-            dependencies: [" ChromaUseCases"]
+            name: "ChromaDomainTests",
+            dependencies: ["ChromaDomain"]
         ),
     ]
 )

@@ -10,14 +10,15 @@
 // Concrete HistoryGateway – placeholder implementation.
 
 import Foundation
+import ChromaDomain
 
 /// Simple placeholder HistoryGateway that currently returns an empty list.
 ///
 /// Later, you can back this by Core Data, a sqlite DB, or JSON index files.
-public actor HistoryStoreGateway: HistoryGateway {
+public actor HistoryStoreGateway: ChromaDomain.HistoryGateway {
     public init() {}
 
-    public func loadRecentSessions(limit: Int) async throws -> [SessionSummary] {
+    public func loadRecentSessions(limit: Int) async throws -> [ChromaDomain.SessionSummary] {
         // TODO: Implement real persistence.
         // For now, return an empty list so history UI can compile.
         return []

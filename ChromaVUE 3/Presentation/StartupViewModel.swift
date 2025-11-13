@@ -2,19 +2,20 @@
 //  StartupViewModel.swift
 //  ChromaVUE 3
 //
-//  Created by Mohamed Elbashir on 11/4/25.
-//
-
 
 // Presentation/StartupViewModel.swift
 // ViewModel that drives startup & permission state.
 
 import Foundation
+import Combine
 import SwiftUI
+import ChromaUseCases
 
+/// ViewModel responsible for evaluating startup conditions and driving the initial navigation / permissions UI.
 @MainActor
 final class StartupViewModel: ObservableObject {
-    @Published var state: StartupState = .idle
+    /// High-level startup state that drives the root navigation / permissions UI.
+    @Published private(set) var state: StartupState = .idle
 
     private let startupUseCase: StartupUseCase
 

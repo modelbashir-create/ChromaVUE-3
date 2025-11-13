@@ -1,11 +1,20 @@
+//
+//  SystemPermissionsGateway.swift
+//  ChromaVUE 3
+//
+//  Created by Mohamed Elbashir on 11/4/25.
+//
+
+
 // Infrastructure/SystemPermissionsGateway.swift
 // Concrete PermissionsGateway using AVFoundation.
 
 import Foundation
 import AVFoundation
+import ChromaDomain
 
 /// Wraps AVFoundation's camera permission APIs in the PermissionsGateway protocol.
-public final class SystemPermissionsGateway: PermissionsGateway {
+public final class SystemPermissionsGateway: ChromaDomain.PermissionsGateway {
     public init() {}
 
     public func cameraAuthorizationStatus() async -> CameraAuthorizationStatus {

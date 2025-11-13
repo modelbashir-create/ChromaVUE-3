@@ -2,7 +2,7 @@
 // Training-specific orchestration (export configuration, markers).
 
 import Foundation
-
+import ChromaDomain
 public protocol TrainingUseCase: Sendable {
     /// Start a training session with the given export configuration.
     func startTrainingSession(config: TrainingExportConfig) async

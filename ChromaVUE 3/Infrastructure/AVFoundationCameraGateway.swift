@@ -3,17 +3,19 @@
 
 import Foundation
 import AVFoundation
+import ChromaDomain
 
 /// AVFoundation-based implementation of CameraGateway.
 ///
 /// - Owns an AVCaptureSession and streams CVPixelBuffer frames to the handler.
 /// - Does not know about SwiftUI or any UI concepts.
-public final class AVFoundationCameraGateway: NSObject, CameraGateway {
+@MainActor
+public final class AVFoundationCameraGateway: NSObject, ChromaDomain.CameraGateway {
     private let session = AVCaptureSession()
     private let videoOutput = AVCaptureVideoDataOutput()
     private let queue = DispatchQueue(label: "camera.gateway.queue")
 
-    private var handler: FrameHandler?
+    private var handler: CameraGateway.FrameHandler?
 
     private var isConfigured = false
     private var frameIndex: Int = 0
@@ -23,9 +25,12 @@ public final class AVFoundationCameraGateway: NSObject, CameraGateway {
         super.init()
     }
 
+    /// Expose the capture session for use by CameraPreview.swift.
+    public var captureSession: AVCaptureSession { session }
+
     // MARK: - CameraGateway
 
-    public func startStreaming(handler: @escaping FrameHandler) async throws {
+    public func startStreaming(handler: @escaping CameraGateway.FrameHandler) async throws {
         self.handler = handler
 
         if !isConfigured {
@@ -101,7 +106,7 @@ extension AVFoundationCameraGateway: AVCaptureVideoDataOutputSampleBufferDelegat
         let t0 = sessionStartMS ?? nowMS
         let relMS = max(0, nowMS - t0)
 
-        let meta = FrameMetadata(
+        let meta = ChromaDomain.FrameMetadata(
             timestampMS: relMS,
             index: frameIndex,
             torchPhase: .on,      // TODO: wire real torch phase

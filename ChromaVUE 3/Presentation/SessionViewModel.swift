@@ -3,6 +3,9 @@
 
 import Foundation
 import SwiftUI
+import Combine
+import ChromaDomain
+import ChromaUseCases
 
 @MainActor
 final class SessionViewModel: ObservableObject {
@@ -11,16 +14,32 @@ final class SessionViewModel: ObservableObject {
     @Published var qcMessage: String = ""
     @Published var qcLevel: QCLevel = .good
 
-    /// For now we just keep the last scalar grid; later you can turn this into CIImage/MTLTexture.
+    /// Latest scalar grid (StO₂ map).
     @Published var lastScalarGrid: ScalarGrid?
 
     /// Current session mode (clinical/training/developer).
     @Published var mode: SessionMode = .clinical
 
+    /// Shared app settings (including heatmap backend).
+    let settings: AppSettings
+
+    private var settingsCancellable: AnyCancellable?
+
+    /// Convenience mirror so views can bind via the VM.
+    var heatmapBackend: HeatmapBackend {
+        get { settings.heatmapBackend }
+        set { settings.heatmapBackend = newValue }
+    }
+
     private let sessionUseCase: SessionUseCase
 
-    init(sessionUseCase: SessionUseCase) {
+    init(sessionUseCase: SessionUseCase, settings: AppSettings) {
         self.sessionUseCase = sessionUseCase
+        self.settings = settings
+        settingsCancellable = settings.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
     }
 
     // MARK: - Intents
@@ -53,8 +72,7 @@ final class SessionViewModel: ObservableObject {
 
 extension SessionViewModel: SessionEventsSink {
     func sessionDidUpdate(_ state: LiveSessionState) async {
-        // Called from SessionInteractor (actor). We are @MainActor so UI updates are safe.
-        guard let frame = state.lastFrame else { return }
+        let frame = state.lastFrame
 
         lastScalarGrid = frame.scalar
         qcLevel = frame.qcLevel
@@ -76,5 +94,4 @@ extension SessionViewModel: SessionEventsSink {
     }
 }
 
-// Enable use as a SessionEventsSink across actor boundaries.
 extension SessionViewModel: @unchecked Sendable {}
